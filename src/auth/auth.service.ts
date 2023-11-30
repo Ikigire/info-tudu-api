@@ -1,11 +1,39 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateUsuarioDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Usuario } from './entities/auth.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateUsuarioDto) {
-    return 'This action adds a new auth';
+
+  constructor(
+    @InjectModel( Usuario.name ) private usuarioModel: Model<Usuario>
+  ) {}
+
+  async create(createUsuarioDto: CreateUsuarioDto): Promise<Usuario> {
+    
+    try {
+      createUsuarioDto.password = bcrypt.hashSync(createUsuarioDto.password, 10)
+
+      const newUsuario = new this.usuarioModel(createUsuarioDto);
+      await newUsuario.save();
+      const usuario = newUsuario.toJSON();
+
+      return usuario;
+    } catch (error) {
+      console.log(error);
+      if (error.code == 11000){
+        throw new BadRequestException(`${createUsuarioDto.email} ya está registrado`);
+      }
+
+      throw new InternalServerErrorException('Mi primera chamba');
+    }
+
+    //Justo
+    //return this.usuarioRepository.insert(createUsuarioDto);
   }
 
   findAll() {

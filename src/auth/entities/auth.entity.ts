@@ -14,7 +14,7 @@ export class Usuario {
         minlength: 6,
         required: true
     } )
-    password:string;
+    password?:string;
 }
 
 export const UsuarioSchema = SchemaFactory.createForClass(Usuario);

@@ -16,8 +16,7 @@ import { find } from 'rxjs';
 export class AuthService {
 
   constructor(
-    @InjectModel( Usuario.name ) private usuarioModel: Model<Usuario>,
-    private jwtService: JwtService
+    @InjectModel( Usuario.name ) private usuarioModel: Model<Usuario>
   ) {}
 
   async create(createUsuarioDto: CreateUsuarioDto): Promise<Usuario> {
@@ -43,7 +42,7 @@ export class AuthService {
     //return this.usuarioRepository.insert(createUsuarioDto);
   }
 
-  async login( loginDto: LoginDto ): Promise<LoginResponse> {
+  async login( loginDto: LoginDto ): Promise<Usuario> {
     const { email, password } = loginDto;
     const usuario = await this.usuarioModel.findOne( 
       {
@@ -66,15 +65,7 @@ export class AuthService {
 
     const { password:_, ...user } = usuario.toJSON();
 
-    return {
-      usuario: user,
-      token: createJwt(
-        {
-          id: usuario.id
-        },
-        this.jwtService
-      )
-    };
+    return user;
   }
 
   async findAll(): Promise<Usuario[]> {
@@ -91,14 +82,24 @@ export class AuthService {
     return rest;
   }
 
-  async update(id: string, usuario: UpdateAuthDto) {
+  async update(id: string, usuario: UpdateAuthDto): Promise<Usuario> {
     await this.usuarioModel.updateOne({id }, usuario);
     
     return this.findOne(id);
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<Usuario> {
+    const usuario = await this.findOne(id)
+
+    if (!usuario) {
+      throw new NotFoundException('No existe usuario con ese Id'); 
+    }
+
+    usuario.isActive = false;
     // Hacer baja lógica
-    return this.findOne(id);
+
+    this.usuarioModel.updateOne({_id: id}, usuario);
+
+    return usuario;
   }
 }
